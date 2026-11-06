@@ -1,0 +1,29 @@
+name: Publish knowledge notebook
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.publish.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare verified site files
+        run: |
+          mkdir -p _site
+          cp index.html _site/
+          cd _site
+          for asset in data.js app.js style.css; do
+            curl --retry 3 --fail --silent --show-error --max-time 60 -o "$asset" "https://service-knowledge-notebook-k7p4.glazedwoodpecker2.chatgpt.site/$asset"
+          done
+          sha256sum -c ../assets.sha256
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: publish
+        uses: actions/deploy-pages@v4
